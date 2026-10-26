@@ -4,8 +4,8 @@ import {
     ServerSession,
     CallbackMeta,
     SwappableArgs, SwapPlaceholders_args, UnknownFunction, diag_sourceLocation, DOCS_READMEURL
-} from "./ServerSession";
-import {RestfuncsServer, SecurityGroup} from "./Server";
+} from "./ServerSession.js";
+import {RestfuncsServer, SecurityGroup} from "./Server.js";
 import {Socket} from "engine.io";
 import {
     CookieSession,
@@ -27,9 +27,9 @@ import {
     Socket_DownCallResult, fixErrorForJest, Socket_ChannelItemNotUsedAnymore, Socket_StreamDataRequest
 } from "restfuncs-common";
 import _ from "underscore";
-import {CommunicationError, isCommunicationError} from "./CommunicationError";
+import {CommunicationError, isCommunicationError} from "./CommunicationError.js";
 import {Readable, Writable} from "readable-stream";
-import {cloneAndFixNonSerializeable, createSecureId, diagnisis_shortenValue, throwError, validUnless} from "./Util";
+import {cloneAndFixNonSerializeable, createSecureId, diagnisis_shortenValue, throwError, validUnless} from "./Util.js";
 import {parse as brilloutJsonParse} from "@brillout/json-serializer/parse"
 import {stringify as brilloutJsonStringify} from "@brillout/json-serializer/stringify";
 import crypto from "node:crypto";
@@ -233,6 +233,8 @@ export class ServerSocketConnection {
             this.setCookieSession(message.payload);
         }
         else if(message.type === "channelItemNotUsedAnymore") {
+            // TODO: move code to trackedSentChannelItems
+
             const payload = message.payload as Socket_ChannelItemNotUsedAnymore;
 
             typeof payload.id === "number" && typeof payload.time === "number"|| throwError("Invalid payload"); // Validity check
@@ -245,7 +247,8 @@ export class ServerSocketConnection {
             }
         }
         else if(message.type === "streamDataRequest") {
-            // TODO: move to trackedSentChannelItems
+            // TODO: move code to trackedSentChannelItems
+
             const payload = message.payload as Socket_StreamDataRequest;
             typeof payload.id === "number" && typeof payload.size === "number" || throwError("Invalid payload"); // Validity check
             const trackedItem = this.trackedSentChannelItems.items.get(payload.id);
@@ -714,7 +717,7 @@ export class ServerSocketConnection {
 
         const methodDownCallpromise = this.methodDownCallPromises.get(resultFromClient.callId);
         if(!methodDownCallpromise) {
-            throw new Error( `MethodDownCallPromise for callId: ${resultFromClient.callId} does not exist.`);
+            throw new Error( `MethodDownCallPromise for callId: ${resultFromClient.callId} does not exist. Make sure, you're not passing an async function as callback which is declared sync on the server side. I.e. The server declares  @remote myRemoteMethod( progressCallback: () => void ) but you're somehow passing an async function to progressCallback`);
         }
         this.methodDownCallPromises.delete(resultFromClient.callId);
         methodDownCallpromise.resolve(resultFromClient);

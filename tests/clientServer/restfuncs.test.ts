@@ -1,23 +1,23 @@
-import {ServerSession as ServerSession, ServerSessionOptions} from "restfuncs-server";
+import {ServerSession as ServerSession, ServerSessionOptions, ServerSocketConnection} from "restfuncs-server/index";
 import express from "express";
-import {ClientSocketConnection, RestfuncsClient, ServerError} from "restfuncs-client";
+import {ClientSocketConnection, RestfuncsClient, ServerError} from "restfuncs-client/index";
 import {parse as brilloutJsonParse} from "@brillout/json-serializer/parse"
 import {Readable} from "node:stream";
 import {diagnosis_looksLikeJSON, shieldTokenAgainstBREACH_unwrap} from "restfuncs-server/Util";
 import {CommunicationError} from "restfuncs-server/CommunicationError";
 import session from "express-session";
-import {restfuncsExpress, ServerOptions} from "restfuncs-server";
+import {restfuncsExpress, ServerOptions} from "restfuncs-server/index";
 import {CookieSession, WelcomeInfo} from "restfuncs-common";
 import nacl from "tweetnacl";
 import nacl_util from "tweetnacl-util";
-import {remote, RemoteMethodOptions} from "restfuncs-server";
+import {remote, RemoteMethodOptions} from "restfuncs-server/index";
 import {
     createServer,
     expectAsyncFunctionToThrow, readStreamToBuffer,
     resetGlobalState,
     runClientServerTests,
     runRawFetchTests,
-    Service,
+    Service, sleep,
     standardOptions
 } from "./lib";
 import {isDepsOptimizerEnabled} from "vite";
@@ -2400,6 +2400,39 @@ it('should reopen failed ClientSocketConnections', async () => {
         await client2.proxy.myMethod()
 
         await expectAsyncFunctionToThrow(async () => await client1.proxy.failConnection());
+        // Should work again
+        await client1.proxy.myMethod()
+        await client2.proxy.myMethod()
+
+    } finally {
+        // shut down server:
+        server.closeAllConnections();
+        await new Promise((resolve) => server.close(resolve));
+    }
+});
+
+
+it('should recover from failed engine.io connections', async () => {
+    let serverConn: ServerSocketConnection | undefined = undefined;
+    class MyService extends Service {
+        myMethod() {
+            serverConn = this.call.socketConnection!
+        }
+    }
+
+    const server = createServer(MyService);
+    try {
+        // @ts-ignore
+        const port = server.address().port;
+        const client1 = new RestfuncsClient<MyService>(`http://localhost:${port}`, {useSocket: true, shareSocketConnections: true})
+        const client2 = new RestfuncsClient<MyService>(`http://localhost:${port}`, {useSocket: true, shareSocketConnections: true})
+
+        await client1.proxy.myMethod()
+        await client2.proxy.myMethod()
+
+        serverConn!.failFatal(new Error("simulated error"));
+        await sleep(100);
+
         // Should work again
         await client1.proxy.myMethod()
         await client2.proxy.myMethod()

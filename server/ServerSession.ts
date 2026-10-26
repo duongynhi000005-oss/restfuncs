@@ -21,14 +21,14 @@ import {
     parseContentTypeHeader,
     shieldTokenAgainstBREACH,
     shieldTokenAgainstBREACH_unwrap, throwError
-} from "./Util";
+} from "./Util.js";
 import escapeHtml from "escape-html";
 import crypto from "node:crypto"
-import {getServerInstance, PROTOCOL_VERSION, RestfuncsServer, SecurityGroup} from "./Server";
+import {getServerInstance, PROTOCOL_VERSION, RestfuncsServer, SecurityGroup} from "./Server.js";
 import {stringify as brilloutJsonStringify} from "@brillout/json-serializer/stringify";
 import type {Readable as Readable_fromNodePackage} from "node:stream";
 import type {Readable as Readable_fromReadableStreamPackage} from "readable-stream";
-import {CommunicationError, isCommunicationError} from "./CommunicationError";
+import {CommunicationError, isCommunicationError} from "./CommunicationError.js";
 import {AsyncLocalStorage} from 'node:async_hooks'
 import {
     CookieSession, CookieSessionState,
@@ -46,7 +46,7 @@ import {
     cloneError,
     ERROR_PROPERTIES, toHybridReadable,
 } from "restfuncs-common";
-import {ServerSocketConnection,} from "./ServerSocketConnection";
+import {ServerSocketConnection,} from "./ServerSocketConnection.js";
 import nacl_util from "tweetnacl-util";
 import nacl from "tweetnacl";
 import typia, {IValidation} from "typia"
@@ -829,7 +829,12 @@ export class ServerSession implements IServerSession {
                     // Format error and send it:
                     acceptedResponseContentTypes.find((accept) => { // Iterate until we have handled it
                         if(accept == "application/json") {
-                            res.json(error);
+                            try {
+                                res.json(error);
+                            }
+                            catch (e) {
+                                res.json(this.logAndConcealError(new CommunicationError(`Error, serializing error to json. Original error's message: ${(e as any)?.message}`), {req}))
+                            }
                         }
                         else if(accept == "text/html") {
                             res.contentType("text/html; charset=utf-8")

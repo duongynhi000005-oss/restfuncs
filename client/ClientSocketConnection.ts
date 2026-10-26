@@ -1,6 +1,6 @@
 import {Socket, SocketOptions} from "engine.io-client";
-import {isNode, DropConcurrentOperationMap, DropConcurrentOperation, throwError} from "./Util";
-import {RestfuncsClient, ServerError} from "./index";
+import {isNode, DropConcurrentOperationMap, DropConcurrentOperation, throwError} from "./Util.js";
+import {RestfuncsClient, ServerError} from "./index.js";
 import {
     _testForRaceCondition_breakPoints,
     ClientCallbackDTO, cloneError,
@@ -440,6 +440,8 @@ export class ClientSocketConnection {
                 } else if (message.type === "downCall") {
                     this.handleDownCall(message.payload as Socket_DownCall /* will be validated in method*/);
                 } else if (message.type === "channelItemNotUsedAnymore") {
+                    // TODO: move code to trackedSentChannelItems
+
                     await _testForRaceCondition_breakPoints.offer("client/ClientSocketConnection/handleMessage/channelItemNotUsedAnymore");
                     const payload = message.payload as Socket_ChannelItemNotUsedAnymore;
 

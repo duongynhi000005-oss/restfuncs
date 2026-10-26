@@ -6,8 +6,8 @@ import {
     Socket_StreamDataRequest,
     toHybridReadable,
     visitReplace
-} from "./index";
-import {isReadable} from "./hybridstreams";
+} from "./index.js";
+import {isReadable} from "./hybridstreams.js";
 import nacl_util from "tweetnacl-util"
 
 export class TrackedSentChannelItems {
@@ -72,6 +72,9 @@ export class TrackedSentChannelItems {
      * The placeholder+swapping functions is a preparation for {@link ServerSession#validateMethodArguments}.
      */
     replaceStreamChannelItemsWithDTOs(valueToBeSent: unknown): unknown {
+        if(valueToBeSent === null || typeof valueToBeSent !== "object") {
+            return valueToBeSent;
+        }
         return visitReplace(valueToBeSent, (item, visitChilds, context) => {
             if (isAnyReadableStream(item)) {
                 const me = this;

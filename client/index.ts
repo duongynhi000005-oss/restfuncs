@@ -8,11 +8,11 @@ import {
     readableStreamToHybridStream,
     WelcomeInfo
 } from "restfuncs-common";
-import {ClientSocketConnection} from "./ClientSocketConnection";
-import {isNode, DropConcurrentOperation, DropConcurrentOperationMap, RetryableResolver, WeakMapSet} from "./Util";
+import {ClientSocketConnection} from "./ClientSocketConnection.js";
+import {isNode, DropConcurrentOperation, DropConcurrentOperationMap, RetryableResolver, WeakMapSet} from "./Util.js";
 import {visitReplace} from "restfuncs-common";
 
-export {ClientSocketConnection} from "./ClientSocketConnection";
+export {ClientSocketConnection} from "./ClientSocketConnection.js";
 
 const SUPPORTED_SERVER_PROTOCOL_MAXVERSION = 1
 const REQUIRED_SERVER_PROTOCOL_FEATUREVERSION = 1 // we need the brillout-json feature
@@ -611,7 +611,7 @@ export class RestfuncsClient<S extends IServerSession> {
                 throw new Error(`A (callback-) function was found inside your arguments of ${remoteMethodName}: args${context!.diagnosis_path}. Callback functions are only possible with (web-) sockets. ${this.diagnosis_whyNoSocketsAvailable()}`)
             }
             return visitChilds(value, context);
-        }, "onError");
+        }, {trackPath: "onError"});
     }
 
     private diagnosis_whyNoSocketsAvailable() {
@@ -621,6 +621,10 @@ export class RestfuncsClient<S extends IServerSession> {
         else {
             return "Sockets were not enabled on the server. Please use restfuncsExpress() instead of express() or check the ServerOptions#installEngineIoServer setting (but this should be already enabled by default)"
         }
+    }
+
+    toJSON() {
+        return JSON.stringify({}); // Don't make toJSON go deeper and hit this.proxy.toJSON and trigger remote calls
     }
 }
 

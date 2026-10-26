@@ -5,9 +5,9 @@ import {
     ClientCallbackSetPerItem,
     ServerSession as ServerSession,
     ServerSessionOptions
-} from "restfuncs-server";
-import {remote} from "restfuncs-server";
-import {free} from "restfuncs-server/ServerSession";
+} from "restfuncs-server/index";
+import {remote} from "restfuncs-server/index";
+import {free} from "restfuncs-server/index";
 import {expectAsyncFunctionToThrow, resetGlobalState, runClientServerTests} from "./lib";
 import {_testForRaceCondition_breakPoints} from "restfuncs-common";
 
@@ -459,7 +459,7 @@ test("It should not crash with exotic errors", async () => {
     );
 });
 
-test("It should not crash when having a serializatin error", async () => {
+test("It should not crash when having a serialization error", async () => {
     class MyServerSession extends ServerSession{
         @remote remoteMethod() {
             return () => {}; // cannot serialize this
@@ -467,6 +467,21 @@ test("It should not crash when having a serializatin error", async () => {
     }
     await runClientServerTests(new MyServerSession(), async (apiProxy) => {
             await expectAsyncFunctionToThrow(() => apiProxy.remoteMethod(), "serialize");
+        }, {}
+    );
+});
+
+test("It should not crash when having a serialization error - with unserializable errors", async () => {
+    class MyServerSession extends ServerSession{
+        @remote remoteMethod() {
+            const error = new Error("Non ser. error") as any;
+            error.fn = () => {}
+            error.recursive = error;
+            throw error;
+        }
+    }
+    await runClientServerTests(new MyServerSession(), async (apiProxy) => {
+            await expectAsyncFunctionToThrow(() => apiProxy.remoteMethod(), /serializing|Converting circular structure to JSON/);
         }, {}
     );
 });

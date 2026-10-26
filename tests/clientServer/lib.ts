@@ -1,5 +1,5 @@
-import {RemoteMethodOptions, restfuncsExpress, ServerSession, ServerSessionOptions} from "restfuncs-server";
-import {ClientProxy, RestfuncsClient, develop_resetGlobalState as client_develop_resetGlobalState} from "restfuncs-client";
+import {RemoteMethodOptions, restfuncsExpress, ServerSession, ServerSessionOptions} from "restfuncs-server/index";
+import {ClientProxy, RestfuncsClient, develop_resetGlobalState as client_develop_resetGlobalState} from "restfuncs-client/index";
 import {develop_resetGlobals} from "restfuncs-server/Server";
 import {extendPropsAndFunctions} from "restfuncs-server/Util";
 import session from "express-session";
@@ -167,6 +167,12 @@ export async function expectAsyncFunctionToThrow(f: ((...any) => any) | Promise<
             throw caught;
         }
     }).toThrow(expected);
+}
+
+export async function sleep(ms: number) {
+    return new Promise<void>((resolve, reject) => {
+        setTimeout(resolve, ms);
+    })
 }
 
 export function readStreamToBuffer(stream: Readable): Promise<Buffer> {

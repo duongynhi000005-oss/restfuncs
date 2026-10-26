@@ -1,4 +1,4 @@
-import {WeakValueMap} from "./WeakValueMap";
+import {WeakValueMap} from "./WeakValueMap.js";
 import {
     ChannelItemDTO, Socket_StreamData,
     Socket_StreamDataRequest,
@@ -6,7 +6,7 @@ import {
     toHybridReadable,
     validUnless,
     visitReplace
-} from "./index";
+} from "./index.js";
 import {Readable} from "readable-stream";
 import nacl_util from "tweetnacl-util"
 
@@ -39,7 +39,7 @@ export class ReceivedChannelItems extends WeakValueMap<number, object>{
 
     free(item: any) {
         item.id !== undefined && typeof item.id === "number" || throwError(`Value does not seem to be a ${DIAGNOSIS_WHATISACHANNELITEM}`);
-        delete(item.id);
+        this.delete(item.id);
         if(!this.socketConnection.isClosed()) {
             this.socketConnection.sendMessage({
                 type: "channelItemNotUsedAnymore",
@@ -54,6 +54,9 @@ export class ReceivedChannelItems extends WeakValueMap<number, object>{
      * @param onDTOReplaced: Called back for every replacement. Params: item = the implementation that was inserted (i.e. a Readble). insertIntoPlace = a function that can beused to insert some other object into that place
      */
     replaceDTOsAndTrackThem(receivedValue: unknown, onDTOReplaced?: (item: object, insertIntoPlace: (newValue: unknown)=>void) => void): unknown {
+        if(receivedValue === null || typeof receivedValue !== "object") {
+            return receivedValue;
+        }
         return visitReplace(receivedValue, (item, visitChilds, context) => {
             const insertIntoPlace = (newValue: unknown) => {
                 //@ts-ignore
